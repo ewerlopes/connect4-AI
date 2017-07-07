@@ -1,0 +1,4 @@
+- class: greedy
+- class: pvsdeep
+  maxdepth: 6
+
