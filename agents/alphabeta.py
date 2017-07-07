@@ -1,6 +1,6 @@
-from evaluate import INF
-from c4.engine.negamax import NegamaxEngine
-from c4.moveorder import MoveOrder
+from game.evaluate import INF
+from agents.negamax import NegamaxEngine
+from game.moveorder import MoveOrder
 from agents.cached import CachedEngineMixin
 from agents.deepening import IterativeDeepeningEngineMixin
 
@@ -33,7 +33,7 @@ class AlphaBetaEngine(NegamaxEngine):
         bestmove = []
         bestscore = alpha
         for m in self.moveorder(board, board.moves(), hint):
-            nextmoves, score = self.search(board.move(m), depth-1, ply+1,
+            nextmoves, score = self.search(board.actions(m), depth - 1, ply + 1,
                                            -beta, -bestscore)
             score = -score
             if score > bestscore:

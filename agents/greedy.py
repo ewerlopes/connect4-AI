@@ -1,8 +1,8 @@
 import numpy as np
 
-from c4.evaldiff import evaldiff
-from c4.engine.base import Engine
-from c4.evaluate import Evaluator, INF
+from game.evaldiff import evaldiff
+from agents.base import Engine
+from game.evaluate import Evaluator, INF
 
 
 class GreedyEngine(Engine):
@@ -11,15 +11,15 @@ class GreedyEngine(Engine):
         self.evaluate = self._evaluator.evaluate
 
     def choose(self, board):
-        moves = board.moves()
+        moves = board.actions()
         m = moves[0]
         moves = moves[1:]
 
         bestmove = m
-        bestscore = -self.evaluate(board.move(m))
+        bestscore = -self.evaluate(board.actions(m))
 
         for m in moves:
-            score = -self.evaluate(board.move(m))
+            score = -self.evaluate(board.actions(m))
             if score > bestscore:
                 bestmove = m
                 bestscore = score

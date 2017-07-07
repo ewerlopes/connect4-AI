@@ -225,6 +225,12 @@ except NameError:
 
 infinity = 1.0e400
 
+# GAME CONSTANTS
+PLAYER1 = 1
+PLAYER2 = 2
+DRAW = 0
+COMPUTE = -1
+
 
 class WrongMoveError(Exception):
     pass

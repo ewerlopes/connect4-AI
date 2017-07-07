@@ -1,9 +1,9 @@
 import time
 from collections import defaultdict
 
-from c4.board import DRAW
-from c4.evaluate import INF
-from c4.engine.greedy import GreedyEngine
+from problem.utils import DRAW
+from game.evaluate import INF
+from agents.greedy import GreedyEngine
 
 
 class NegamaxEngine(GreedyEngine):
@@ -65,7 +65,7 @@ class NegamaxEngine(GreedyEngine):
         bestmove = []
         bestscore = -INF
         for m in board.moves():
-            nextmoves, score = self.search(board.move(m), depth-1, ply+1)
+            nextmoves, score = self.search(board.actions(m), depth - 1, ply + 1)
             score = -score
             if not bestmove or score >= bestscore:
                 bestscore = score

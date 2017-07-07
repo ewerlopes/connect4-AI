@@ -1,6 +1,6 @@
 from collections import namedtuple, OrderedDict
 
-from c4.evaluate import INF
+from evaluate import INF
 
 
 Entry = namedtuple('Entry', 'move depth score state')
@@ -60,10 +60,10 @@ class Cache(object):
             elif entry.state is Cache.UPPERBOUND and entry.score <= alpha:
                 hit = True
 
-        if flip and entry.move is not None:
-            move = 6 - entry.move
+        if flip and entry.actions is not None:
+            move = 6 - entry.actions
         else:
-            move = entry.move
+            move = entry.actions
 
         if hit:
             score = entry.score

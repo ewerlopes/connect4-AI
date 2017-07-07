@@ -2,18 +2,17 @@
 import sys
 import random
 import argparse
-import model
-import view
+from view import view
 import yaml
 import numpy as np
 
 from control import controller, eventmanager
-from game.board import Board
 from agents import (GreedyEngine, WeightedGreedyEngine, RandomEngine,
                     MonteCarloTreeSearch, NegamaxEngine, AlphaBetaEngine,
                     ABCachedEngine, ABDeepEngine, PVSEngine, PVSCachedEngine,
                     PVSDeepEngine, HumanEngine)
 
+from game.game import GameEngine
 from game.arena import arena
 
 
@@ -84,9 +83,9 @@ def run_game(args):
 
     # Start game
     ev_manager = eventmanager.EventManager()
-    game_model = model.GameEngine(ev_manager)
+    game_model = GameEngine(ev_manager)
     keyboard = controller.Keyboard(ev_manager, game_model)
-    graphics = view.GraphicalView(ev_manager, game_model)
+    graphics = view.ConsoleView(ev_manager, game_model)
     game_model.run(p1, p2)
 
 

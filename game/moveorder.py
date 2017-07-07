@@ -1,8 +1,8 @@
 import random
 from functools import partial
 
-from c4.evaluate import Evaluator
-from c4.evaldiff import evaldiff
+from evaluate import Evaluator
+from evaldiff import evaldiff
 
 
 class MoveOrder(object):
@@ -33,7 +33,7 @@ class MoveOrder(object):
             return moves
 
         return sorted(moves,
-                      key=lambda m: -self.evaluate(board.move(m)),
+                      key=lambda m: -self.evaluate(board.actions(m)),
                       reverse=True)
 
     def _order_diff(self, board, moves):

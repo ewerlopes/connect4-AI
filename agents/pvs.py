@@ -1,7 +1,7 @@
-from c4.evaluate import INF
-from c4.engine.alphabeta import AlphaBetaEngine
-from c4.engine.cached import CachedEngineMixin
-from c4.engine.deepening import IterativeDeepeningEngineMixin
+from game.evaluate import INF
+from agents.alphabeta import AlphaBetaEngine
+from agents.cached import CachedEngineMixin
+from agents.deepening import IterativeDeepeningEngineMixin
 
 
 class PVSEngine(AlphaBetaEngine):
@@ -19,15 +19,15 @@ class PVSEngine(AlphaBetaEngine):
         bestscore = alpha
         for i, m in enumerate(self.moveorder(board, board.moves(), hint)):
             if i == 0 or depth == 1 or (beta-alpha) == 1:
-                nextmoves, score = self.search(board.move(m), depth-1, ply+1,
+                nextmoves, score = self.search(board.actions(m), depth - 1, ply + 1,
                                                -beta, -bestscore)
             else:
                 # pvs uses a zero window for all the other searches
-                _, score = self.search(board.move(m), depth-1, ply+1,
-                                       -bestscore-1, -bestscore)
+                _, score = self.search(board.actions(m), depth - 1, ply + 1,
+                                       -bestscore - 1, -bestscore)
                 score = -score
                 if score > bestscore:
-                    nextmoves, score = self.search(board.move(m), depth-1, ply+1,
+                    nextmoves, score = self.search(board.actions(m), depth - 1, ply + 1,
                                                    -beta, -bestscore)
                 else:
                     continue

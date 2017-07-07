@@ -1,6 +1,6 @@
 from itertools import permutations
 
-from c4.game import GameHandler
+from game import GameEngine
 
 
 class Stat(object):
@@ -26,7 +26,7 @@ def arena(engines, rounds):
     for round in range(rounds):
         for (n1, e1), (n2, e2) in permutations(engines, 2):
             print("%s vs %s" % (n1, n2))
-            game = GameHandler(e1, e2)
+            game = GameEngine(e1, e2)
             b, winner, looser = game.play()
 
             if winner is None:

@@ -1,5 +1,5 @@
-from c4.board import WrongMoveError
-from c4.engine.base import Engine
+from problem.utils import WrongMoveError
+from agents.base import Engine
 
 
 class HumanEngine(Engine):
@@ -13,7 +13,7 @@ class HumanEngine(Engine):
         while True:
             try:
                 move = int(input('Your move: ')) - 1
-                board.move(move)
+                board.actions(move)
             except ValueError:
                 print('Wrong move! Must be an integer between 1-8.')
             except WrongMoveError as e:

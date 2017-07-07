@@ -1,6 +1,7 @@
 import numpy as np
 
-from c4.board import Board, PLAYER1, PLAYER2, DRAW
+from problem.game_problem import Connect4
+from problem.utils import PLAYER1, PLAYER2, DRAW
 
 INF = 1000
 
@@ -21,7 +22,7 @@ class Evaluator(object):
             else:
                 return -INF
 
-        segments = Board.segments(board)
+        segments = Connect4.segments(board)
         filtered_segments = segments[segments.any(1)]
 
         for s in filtered_segments:

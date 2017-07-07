@@ -2,12 +2,7 @@ from control.eventmanager import *
 from model.model import *
 from problem.game_problem import Connect4
 import numpy as np
-
-# GAME CONSTANTS
-PLAYER1 = 1
-PLAYER2 = 2
-DRAW = 0
-COMPUTE = -1
+from problem.utils import PLAYER2, PLAYER1, DRAW
 
 
 class GameEngine(object):
@@ -29,7 +24,7 @@ class GameEngine(object):
         self.game_problem = Connect4()
         self._whose_turn = PLAYER1
         # board represented as a matrix
-        self.board = np.zeros(self.game_problem.get_board_dim(), dtype=int) 
+        self.board = np.zeros(self.game_problem.get_board_dim, dtype=int) 
         
     def notify(self, event):
         """
@@ -50,10 +45,53 @@ class GameEngine(object):
 
     @property
     def whose_turn(self):
+        """
+        Says who is playing the current turn
+        :return: A constant defining who plays.
+        """
         return self._whose_turn
 
+    @staticmethod
+    def get_free_row(board, col):
+        """
+        Return a free row index
+        :param board: a matrix representing the board
+        :param col: the column for which to get the row
+        :return: row index
+        """
+        row = board[col].argmin()
+        if board[col][row] != 0:
+            return None
+        return row
+    
+    @staticmethod
+    def end_result(board):
+        """
+        Check end result
+        :param board: a (terminal) state
+        :return: PLAYER1, in case he won. PLAYER2,
+                in case player2 won. DRAW, otherwise.
+        """
+        for seg in Connect4.segments(board):
+            c = np.bincount(seg)
+            if c[0]:
+                continue
+            if c[PLAYER1] == 4:
+                return PLAYER1
+            elif c[PLAYER2] == 4:
+                return PLAYER2
+
+        if board.all():
+            return DRAW
+        else:
+            return None
+    
     @property
     def advance_turn(self):
+        """
+        Returns who plays next.
+        :return: A constant defining who plays next.
+        """
         return PLAYER1 if self._whose_turn != PLAYER1 else PLAYER2
 
     def run(self, p1_engine, p2_engine):
@@ -72,17 +110,18 @@ class GameEngine(object):
             }
         
         while self.running:
-            is_terminal = self.game_problem.terminal_test(self.board)
+            is_terminal = self.game_problem.is_terminal(self.board)
             if not is_terminal:
                 player = players[self.whose_turn]
-                move = player.choose(self.board, self.game_problem)
-                self.board = self.game_problem.move(move)
-                newTick = TickEvent()
-                self.evManager.Post(newTick)
+                move = player.choose(self.board)
+                self.board = self.game_problem.make_action(player, move, self.board)
+                new_tick = TickEvent()
+                self.evManager.Post(new_tick)
             else:
-                if self.isDrew(is_terminal):    # post draw event.
-                    newTick = DrawEvent()
-                    self.evManager.Post(newTick)
+                game_result = self.end_result(self.board)
+                if game_result == DRAW:    # post draw event.
+                    new_tick = DrawEvent()
+                    self.evManager.Post(new_tick)
                 else:   # send event saying who has won
-                    newTick = WinEvent(self.whose_turn)
-                    self.evManager.Post(newTick)
+                    new_tick = WinEvent(self.whose_turn)
+                    self.evManager.Post(new_tick)

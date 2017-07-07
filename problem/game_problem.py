@@ -1,11 +1,6 @@
 from abc import ABCMeta, abstractmethod
-import utils
 import numpy as np
-
-##########################
-#  SEARCH PROBLEM: GAME  #
-##########################
-
+from problem import utils
 
 class Game:
     """
@@ -21,43 +16,28 @@ class Game:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def legal_moves(self, state):
+    def actions(self, state):
         """Return a list of the allowable moves at this point."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
-    def make_move(self, move, state):
+    def make_action(self, action, state):
         """Return the state that results from making a move from a state."""
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
-    def utility(self, state, player):
-        """Return the value of this final state to player."""
-        pass
-
-    def terminal_test(self, state):
+    def is_terminal(self, state):
         """Return True if this is a final state for the game."""
-        return not self.legal_moves(state)
-
-    @staticmethod
-    def to_move(state):
-        """Return the player whose move it is in this state."""
-        return state.to_move
-
-    def display(self, state):
-        """Print or otherwise display the state."""
-        print state
+        raise NotImplementedError
 
     def successors(self, state):
         """Return a list of legal (move, state) pairs."""
-        return [(move, self.make_move(move, state))
-                for move in self.legal_moves(state)]
+        raise NotImplementedError
 
     def __repr__(self):
         return '<%s>' % self.__class__.__name__
 
 
-class Connect4(object):
+class Connect4(Game):
     """A TicTacToe-like game in which you can only make a move on the bottom
     row, or in a square directly above an occupied square.  Traditionally
     played on a 6x7 board and requiring 4 in a row.
@@ -74,58 +54,32 @@ class Connect4(object):
             |
          y  v
     """
-    ### CONSTANTS ###
-    PLAYER1_ID = 1
-    PLAYER2_ID = 2
-    DRAW_ID = 0
-    COMPUTE_END_RESULT = -1
 
-    def __init__(self, board=None, stm=PLAYER1_ID, end_result=COMPUTE_END_RESULT, cols=7, rows=6):
-        if board is None:
-            # board represented as a matrix
-            board = np.zeros((cols, rows), dtype=int)
-        self._board = board
-        self._next_to_move = stm
+    def __init__(self, cols=7, rows=6):
         self._rows = rows
         self._cols = cols
-        
-        # Check if the game is ended.
-        if end_result == Connect4.COMPUTE_END_RESULT:
-            self._end_result = self._check_end(board)
-        else:
-            self._end_result = end_result
 
     @property
     def get_board_dim(self):
         return self._cols, self._rows
 
-    @property
-    def end(self):
-        return self._end_result
-
-    @property
-    def whose_turn_is_it(self):
-        return self._next_to_move
-
-    @property
-    def other(self):
-        return Connect4.PLAYER1_ID if self._next_to_move != Connect4.PLAYER1_ID else Connect4.PLAYER2_ID
-
-    @classmethod
-    def _check_end(cls, pos):
-        for seg in cls.segments(pos):
+    def is_terminal(self, board):
+        """
+        Return whether the current configuration of board is a terminal state
+        :param board: game board state
+        :return: True if someone won or there was a tie.
+        """
+        # Checks whether a player has won
+        for seg in Connect4.segments(board):
             c = np.bincount(seg)
             if c[0]:
                 continue
-            if c[Connect4.PLAYER1_ID] == 4:
-                return Connect4.PLAYER1_ID
-            elif c[Connect4.PLAYER2_ID] == 4:
-                return Connect4.PLAYER2_ID
-
-        if pos.all():
-            return Connect4.DRAW_ID
-        else:
-            return None
+            if c[PLAYER1] == 4 or c[PLAYER2] == 4:
+                return True
+        # Checks whether there was a tie.
+        if board.all():
+            return True
+        return None
         
     @classmethod
     def get_win_segment(cls, pos):
@@ -145,96 +99,61 @@ class Connect4(object):
             c = np.bincount(seg)
             if c[0]:
                 continue
-            if c[Connect4.PLAYER1_ID] == 4 or c[Connect4.PLAYER2_ID] == 4:
+            if c[PLAYER1] == 4 or c[PLAYER2] == 4:
                 return process(utils.all_segments[i])
                             
 
     @classmethod
     def _check_end_around(cls, pos, r, c, side):
+        """Check whether the game has end by side or whether there was a tie"""
         if (cls.segments_around(pos, r, c) == side).all(1).any():
             return side
 
         if pos.all():
-            return Connect4.DRAW_ID
+            return DRAW
         else:
             return None
 
     @classmethod
-    def segments(cls, pos):
-        if isinstance(pos, Connect4):
-            return cls.segments(pos._board)
-        else:
-            pos = pos.flatten()
-            return pos[utils.all_segments]
+    def segments(cls, board):
+        board = board.flatten()
+        return board[utils.all_segments]
 
     @classmethod
-    def rev_segments(cls, pos):
-        if isinstance(pos, Connect4):
-            return cls.rev_segments(pos._board)
-        else:
-            pos = pos.flatten()
-            return pos[utils.rev_segments]
+    def rev_segments(cls, board):
+        board = board.flatten()
+        return board[utils.rev_segments]
 
     @classmethod
-    def segments_around(cls, pos, r, c):
-        if isinstance(pos, Connect4):
-            return cls.segments_around(pos._board, r, c)
-        else:
-            idx = c * pos.shape[1] + r
-            pos = pos.flatten()
-            return pos[utils.rev_segments[idx]]
+    def segments_around(cls, board, r, c):
+        idx = c * board.shape[1] + r
+        board = board.flatten()
+        return board[utils.rev_segments[idx]]
+
+    def make_action(self, player, action, board):
+        """
+        Make move to the board.
+        :param player: The player to make the move. See Constant in game.py
+        :param action: the column to place a chip
+        :param board: the board game
+        :return: a new board game with the action signed.
+        """
+        if not (0 <= action < self._cols):
+            raise ValueError(action)
         
-    def get_board(self):
-        return [list(l) for l in reversed(self._board.transpose())]
+        pos = board.copy()
 
-    def __str__(self):
-        disc = {
-            0: ' ',
-            1: 'R',
-            2: 'Y'
-        }
+        free_row = pos[action].argmin()
+        if pos[action][free_row] != 0:
+            raise utils.WrongMoveError('Full/Occupied Column')
+        pos[action][free_row] = player
+        return pos
+    
+    def actions(self, board):   
+        return np.flatnonzero(board[:, -1] == 0)
 
-        s = []
-        for row in reversed(self._board.transpose()):
-            s.append(' | '.join(disc[x] for x in row))
-        s.append(' | '.join('-' * 7))
-        s.append(' | '.join(map(str, range(1, 8))))
-        s = ['| ' + x + ' |' for x in s]
-        s = [i + ' ' + x for i, x in zip('ABCDEFG  ', s)]
-        s = '\n'.join(s)
-
-        if self._end_result is Connect4.DRAW_ID:
-            s += '\n<<< Game over: draw' % [self._end_result]
-        elif self._end_result is not None:
-            s += '\n<<< Game over: %s win' % disc[self._end_result]
-        else:
-            s += '\n<<< Move to %s' % disc[self._next_to_move]
-        return s
-
-    def move(self, m):
-        if not (0 <= m < 7):
-            raise ValueError(m)
-
-        pos = self._board.copy()
-
-        r = pos[m].argmin()
-        if pos[m][r] != 0:
-            raise utils.WrongMoveError('Full Column')
-        pos[m][r] = self._next_to_move
-        end = self._check_end_around(pos, r, m, self._next_to_move)
-        stm = self.other
-        return Connect4(pos, stm, end)
-
-    def freerow(self, m):
-        r = self._board[m].argmin()
-        if self._board[m][r] != 0:
-            return None
-        return r
-
-    def moves(self):
-        return np.flatnonzero(self._board[:, -1] == 0)
-
-    def hashkey(self):
+    @classmethod
+    def hashkey(cls, board):
         """Generates an hashkey
 
         Returns a tuple (key, flip)
@@ -244,12 +163,12 @@ class Connect4(object):
         k1 = 0
         k2 = 0
 
-        for x in self._board.flat:
+        for x in board.flat:
             k1 *= 3
             k1 += int(x)
             assert k1 >= 0
 
-        for x in self._board[::-1].flat:
+        for x in board[::-1].flat:
             k2 *= 3
             k2 += int(x)
             assert k2 >= 0

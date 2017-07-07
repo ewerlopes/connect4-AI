@@ -2,7 +2,7 @@ import pygame
 
 import model
 from control.eventmanager import *
-
+from game.game import DRAW
 
 class GraphicalView(object):
     """
@@ -101,3 +101,91 @@ class GraphicalView(object):
         self.clock = pygame.time.Clock()
         self.smallfont = pygame.font.Font(None, 40)
         self.isinitialized = True
+
+
+class ConsoleView(object):
+    """
+    Draws the model state onto the terminal screen.
+    """
+
+    def __init__(self, evManager, model):
+        """
+        evManager (EventManager): Allows posting messages to the event queue.
+        model (GameEngine): a strong reference to the game Model.
+
+        Attributes:
+        isinitialized (bool): pygame is ready to draw.
+        screen (pygame.Surface): the screen surface.
+        clock (pygame.time.Clock): keeps the fps constant.
+        smallfont (pygame.Font): a small font.
+        """
+
+        self.evManager = evManager
+        evManager.RegisterListener(self)
+        self.model = model
+        self.isinitialized = False
+
+    def notify(self, event):
+        """
+        Receive events posted to the message queue. 
+        """
+
+        if isinstance(event, InitializeEvent):
+            self.initialize()
+        elif isinstance(event, QuitEvent):
+            # shut down the pygame graphics
+            self.isinitialized = False
+            pygame.quit()
+        elif isinstance(event, DrawEvent):
+            self.renderboard()
+            self.renderdraw()
+        elif isinstance(event, WinEvent):
+            self.renderboard()
+            self.renderwin(event.winner)
+        elif isinstance(event, TickEvent):
+            if not self.isinitialized:
+                return
+            currentstate = self.model.state.peek()
+            if currentstate == model.STATE_PLAY:
+                self.renderboard()
+                
+    def initialize(self):
+        """
+        Set up the graphical resources.
+        """
+        self.isinitialized = True
+        
+    def renderdraw(self):
+        print '\n<<< Game over: DRAW!'
+        print
+        
+    def renderwin(self, player):
+        print '\n<<< Game over: {} win'.format(player)
+        print 
+    
+    def renderturn(self):
+        print '\n<<< New turn!'
+        print 
+        
+    def renderboard(self):
+        """
+        Render the game board.
+        """
+        
+        disc = {
+            0: ' ',
+            1: 'R',
+            2: 'Y'
+        }
+
+        s = []
+        for row in reversed(self.model.board.transpose()):
+            s.append(' | '.join(disc[x] for x in row))
+        s.append(' | '.join('-' * 7))
+        s.append(' | '.join(map(str, range(1, 8))))
+        s = ['| ' + x + ' |' for x in s]
+        s = [i + ' ' + x for i, x in zip('ABCDEFG  ', s)]
+        s = '\n'.join(s)
+        
+        print s
+        print
