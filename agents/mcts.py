@@ -41,7 +41,7 @@ class MonteCarloTreeSearch(Engine):
 
             max_depth = max(depth, max_depth)
 
-            # run simulation if not at the end of the game tree
+            # run.py simulation if not at the end of the game tree
             if node.end is None:
                 result = self.simulate(node)
             else:

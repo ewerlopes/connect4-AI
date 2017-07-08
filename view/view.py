@@ -1,8 +1,9 @@
 from control.eventmanager import *
 from configparser import ConfigParser
 from problem.utils import PLAYER2, PLAYER1
+from problem.game_problem import Connect4
+from model import model
 import utils
-import model
 import logging
 import sys
 import pygame
@@ -10,6 +11,32 @@ import settings
 import os
 
 
+class RedChip(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+
+        self.image = utils.load_image('red_chip.png')
+        self.rect = self.image.get_rect()
+
+
+class YellowChip(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+
+        self.image = utils.load_image('yellow_chip.png')
+        self.rect = self.image.get_rect()
+        
+
+PLAYER_COLORS = {
+    PLAYER1: settings.COLORS.RED.value,
+    PLAYER2: settings.COLORS.YELLOW.value
+}
+
+PLAYER_CHIPS = {
+    PLAYER1: RedChip,
+    PLAYER2: YellowChip
+}
+        
 class GraphicalView(object):
     """
     Draws the model state onto the screen.
@@ -159,6 +186,7 @@ class ConsoleView(object):
         """
         Set up the graphical resources.
         """
+        result = pygame.init()
         self.isinitialized = True
         self.renderboard()
         self.renderturn()
@@ -187,7 +215,7 @@ class ConsoleView(object):
         }
 
         s = []
-        for row in reversed(self.model.board.transpose()):
+        for row in reversed(self.model.get_board.transpose()):
             s.append(' | '.join(disc[x] for x in row))
         s.append(' | '.join('-' * 7))
         s.append(' | '.join(map(str, range(1, 8))))
@@ -241,6 +269,8 @@ class GameView:
         self.normal_font = None
         self.previous_move_failed = None
         self.highlighted_chips = None
+        self.status_text = None
+        self.status_color = None
 
     def load_config(self):
         logging.info('Loading configuration')
@@ -257,30 +287,6 @@ class GameView:
 
             with open(settings.CONFIG_FILE, 'w') as configfile:
                 self.config.write(configfile)
-
-    def notify(self, event):
-        """
-        Receive events posted to the message queue. 
-        """
-
-        if isinstance(event, InitializeEvent):
-            self.initialize()
-        elif isinstance(event, QuitEvent):
-            # shut down the pygame graphics
-            self.isinitialized = False
-            pygame.quit()
-        elif isinstance(event, TickEvent):
-            if not self.isinitialized:
-                return
-            currentstate = self.model.state.peek()
-            if currentstate == model.STATE_MENU:
-                self.rendermenu()
-            if currentstate == model.STATE_PLAY:
-                self.renderplay()
-            if currentstate == model.STATE_HELP:
-                self.renderhelp()
-            # limit the redraw speed to 30 frames per second
-            self.clock.tick(30)
 
     def initialize(self):
         """
@@ -341,6 +347,16 @@ class GameView:
     def draw_board(self):
         """Draw the board itself (the game support)."""
         board = self.model.get_board
+        for row in board:
+            for col in row:
+                if board[row][col] != 0:
+                    chip = PLAYER_CHIPS[self.model.whose_tun]()
+                    chip.rect.left = 0
+                    chip.rect.top = settings.COLUMN_CHOOSING_MARGIN_TOP
+                    chip.rect.right = settings.IMAGES_SIDE_SIZE * (col + 1)
+                    chip.rect.top  += settings.IMAGES_SIDE_SIZE * (row + 1)
+                    self.chips.add(chip)
+        
         for x in range(0, settings.COLS):
             for y in range(0, settings.ROWS):
                 if (y, x) in self.highlighted_chips.keys() and self.highlighted_chips[(y, x)]:
@@ -348,8 +364,8 @@ class GameView:
                 else:
                     image = self.board_cell_image
 
-                self.window.blit(image, (
-                x * settings.IMAGES_SIDE_SIZE, y * settings.IMAGES_SIDE_SIZE + settings.BOARD_MARGIN_TOP))
+                self.window.blit(image, (x * settings.IMAGES_SIDE_SIZE,
+                                         y * settings.IMAGES_SIDE_SIZE + settings.BOARD_MARGIN_TOP))
 
     def draw_background(self):
         self.window.fill(settings.COLORS.BLACK.value)
@@ -408,106 +424,64 @@ class GameView:
         pygame.draw.line(self.window, settings.COLORS.BLACK.value, (scores_red_rect.left - 15, 0),
                          (scores_red_rect.left - 15, settings.COLUMN_CHOOSING_MARGIN_TOP - 1))
 
-    def _place_chip(self, col):
-        """Move chip down on the screen (effectively perform player movement"""
+    def notify(self, event):
+        """
+        Receive events posted to the message queue. 
+        """
 
-        if self.program_state == settings.GAME_STATES.PLAYING and self.current_player_chip:
-            # Check all rows in the currently selected column starting from the top
-            chip_row_stop = self.get_row(col)
-
-            if chip_row_stop is not False:  # Actually move the chip in the current column and reset the current one (to create a new one later)
-                self.placed_sound.play()
-                self.current_player_chip_column = col
-                self.current_player_chip.rect.right = settings.IMAGES_SIDE_SIZE * \
-                                                      (self.current_player_chip_column + 1)
-                self.current_player_chip.rect.top += settings.IMAGES_SIDE_SIZE * (chip_row_stop + 1)
-                self.current_player_chip = None
-                self.current_player_chip_column = 0
-                self.previous_move_failed = False
-                logging.info('Movement SUCCEEDED!')
-                logging.info("-- BOARD: ")
-                board = self.game_problem.get_board()
-                for i in range(len(board)):
-                    logging.info(board[i])
-            else:  # The column is full
-                self.column_full_sound.play()
-                self.previous_move_failed = True
-                logging.info('Movement FAILED {} column full.'.format(col))
-
-    def update(self):
-        self.draw_background()
-
-        if self.program_state == settings.GAME_STATES.PLAYING:
-
-            if not self.current_player_chip:
-                logging.info(self.current_player.name + ' player turn')
-                self.current_player_chip = self.current_player.chip()
-
-                self.chips.add(self.current_player_chip)
-                self.current_player_chip.rect.left = 0
-                self.current_player_chip.rect.top = settings.COLUMN_CHOOSING_MARGIN_TOP
-
-            status_text = self.current_player.name + " PLAYER'S TURN!"
-            status_color = self.current_player.color
-
-            move = self.current_player.engine.choose(self.game_problem)
-            self.game_problem = self.game_problem.move(move)
-            self._place_chip(move)
-
-            if self.game_problem.end == Connect4.DRAW_ID:
+        if isinstance(event, InitializeEvent):
+            self.initialize()
+        elif isinstance(event, QuitEvent):
+            # shut down the pygame graphics
+            self.isinitialized = False
+            pygame.quit()
+        elif isinstance(event, DrawEvent):
+            if not self.isinitialized:
+                return
+            current_state = self.model.state.peek()
+            if current_state == model.STATE_PLAY:
                 pygame.mixer.music.stop()
                 self.boo_sound.play()
-                self.program_state = settings.GAME_STATES.NO_ONE_WIN
                 logging.info('No one won')
-            elif self.game_problem.end is None and not self.previous_move_failed:  # It's the other player's turn if the current player didn't win
-                self.current_player = self.players[self.game_problem.whose_turn_is_it]
-                logging.info('Starting new player turn')
-            elif self.game_problem.end == Connect4.PLAYER1_ID or self.game_problem.end == Connect4.PLAYER2_ID:
+                self.status_text = 'TIE!'
+                self.status_color = settings.COLORS.WHITE.value
+                self.render()
+            # limit the redraw speed to 30 frames per second
+            self.clock.tick(30)
+        elif isinstance(event, WinEvent):
+            if not self.isinitialized:
+                return
+            current_state = self.model.state.peek()
+            if current_state == model.STATE_PLAY:
                 pygame.mixer.music.stop()
                 self.win_sound.play()
-                self.program_state = settings.GAME_STATES.WON
                 pygame.time.set_timer(settings.EVENTS.WINNER_CHIPS_EVENT.value, 600)
                 logging.info(self.current_player.name + ' WINS!')
-                self.current_player.score += 1
-                self.highlighted_chips = Connect4.get_win_segment(self.game_problem._board)
+                self.highlighted_chips = Connect4.get_win_segment(self.model.get_board)
+                self.status_text = self.model.whose_turn + ' PLAYER WINS!'
+                self.status_color = PLAYER_COLORS[self.model.whose_turn]
+            # limit the redraw speed to 30 frames per second
+            self.clock.tick(30)
+        elif isinstance(event, TickEvent):
+            logging.info('Starting new player turn')
+            if not self.isinitialized:
+                return
+            current_state = self.model.state.peek()
+            if current_state == model.STATE_PLAY:
+                self.renderplay()
+            self.status_text = self.model.whose_turn + " PLAYER'S TURN!"
+            self.status_color = PLAYER_COLORS[self.model.whose_turn]
+            
+            #if currents_tate == model.STATE_HELP:
+            #    self.renderhelp()
+            #if current_state == model.STATE_MENU:
+            #    self.rendermenu()
 
-
-        elif self.program_state == settings.GAME_STATES.WON:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:  # The user want to go back to the game menu
-                        pygame.quit()
-                        sys.exit()
-                    elif event.key == pygame.K_RETURN:  # Pressing the Return key will start a new game
-                        self.new_game()
-                elif event.type == settings.EVENTS.WINNER_CHIPS_EVENT.value:
-                    for k in self.highlighted_chips.keys():
-                        self.highlighted_chips[k] = not self.highlighted_chips[k]
-
-                    pygame.time.set_timer(settings.EVENTS.WINNER_CHIPS_EVENT.value, 600)
-
-            status_text = self.current_player.name + ' PLAYER WINS!'
-            status_color = self.current_player.color
-        elif self.program_state == settings.GAME_STATES.NO_ONE_WIN:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:  # The user want to go back to the game menu
-                        pygame.quit()
-                        sys.exit()
-                    elif event.key == pygame.K_RETURN:  # Pressing the Return key will start a new game
-                        self.new_game()
-
-            status_text = 'TIE!'
-            status_color = settings.COLORS.WHITE.value
-
-        self.draw_header(status_text, status_color)
+            # limit the redraw speed to 30 frames per second
+            self.clock.tick(30)
+            
+    def render(self):
+        self.draw_background()
+        self.draw_header(self.status_text, self.status_color)
         self.chips.draw(self.window)
         self.draw_board()

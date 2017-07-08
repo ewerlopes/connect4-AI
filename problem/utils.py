@@ -10,7 +10,7 @@ import operator, math, random, copy, sys, os.path, bisect
 # ______________________________________________________________________________
 # Compatibility with Python 2.2 and 2.3
 
-# The AIMA code is designed to run in Python 2.2 and up (at some point,
+# The AIMA code is designed to run.py in Python 2.2 and up (at some point,
 # support for 2.2 may go away; 2.2 was released in 2001, and so is over
 # 3 years old). The first part of this file brings you up to 2.4
 # compatibility if you are running in Python 2.2 or 2.3:

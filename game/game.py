@@ -25,6 +25,7 @@ class GameEngine(object):
         self._whose_turn = PLAYER1
         # board represented as a matrix
         self._board = np.zeros(self.game_problem.get_board_dim, dtype=int)
+        
         self.scores = { 
             PLAYER1: 0,
             PLAYER2: 0
@@ -72,7 +73,6 @@ class GameEngine(object):
             return None
         return row
     
-    @property
     def advance_turn(self):
         """
         Returns who plays next.
@@ -89,7 +89,7 @@ class GameEngine(object):
         """
         self.running = True
         self.evManager.Post(InitializeEvent())
-        self.state.push(STATE_MENU)
+        self.state.push(STATE_PLAY)
         players = {
             PLAYER1: p1_engine,
             PLAYER2:  p2_engine
@@ -100,7 +100,8 @@ class GameEngine(object):
             if not is_terminal:
                 player = players[self.whose_turn]
                 move = player.choose(self.game_problem, self._board)
-                self._board = self.game_problem.make_action(player.playing_as, move, self._board)
+                self._board = self.game_problem.make_action(self.whose_turn, move, self._board)
+                self.advance_turn()
                 new_tick = TickEvent()
                 self.evManager.Post(new_tick)
             elif is_terminal == DRAW:

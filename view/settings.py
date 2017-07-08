@@ -1,11 +1,9 @@
-import os
-import sys
 from enum import Enum
-
+#from view import utils
 import pygame
-
+import sys
 import gui
-from c4.engine.game import utils
+import os
 
 VERSION = '1.2'
 FPS = 30
