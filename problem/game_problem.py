@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import numpy as np
 from problem import utils
+from utils import PLAYER1, PLAYER2, DRAW, INF
 
 class Game:
     """
@@ -63,23 +64,28 @@ class Connect4(Game):
     def get_board_dim(self):
         return self._cols, self._rows
 
-    def is_terminal(self, board):
+    @classmethod
+    def is_terminal(cls, board):
         """
         Return whether the current configuration of board is a terminal state
         :param board: game board state
-        :return: True if someone won or there was a tie.
+        :return: None, in case it is not a terminal state. DRAW in case it was
+                a draw, PLAYER1, PLAYER2 in case there was a win.
         """
         # Checks whether a player has won
         for seg in Connect4.segments(board):
             c = np.bincount(seg)
             if c[0]:
                 continue
-            if c[PLAYER1] == 4 or c[PLAYER2] == 4:
-                return True
+            if c[PLAYER1] == 4:
+                return PLAYER1
+            elif c[PLAYER2] == 4:
+                return PLAYER2
         # Checks whether there was a tie.
         if board.all():
-            return True
-        return None
+            return DRAW
+        else:
+            return None
         
     @classmethod
     def get_win_segment(cls, pos):
@@ -151,6 +157,42 @@ class Connect4(Game):
     
     def actions(self, board):   
         return np.flatnonzero(board[:, -1] == 0)
+    
+    @classmethod
+    def evaluate(cls, player_id, board, weights=np.asarray([0, 0, 1, 4, 0])):
+        scores = {PLAYER1: np.zeros(5, dtype=int),
+                  PLAYER2: np.zeros(5, dtype=int)}
+
+        if Connect4.is_terminal(board) is not None:
+            if Connect4.is_terminal(board) == DRAW:
+                return 0
+            elif Connect4.is_terminal(board) == player_id:
+                return INF
+            else:
+                return -INF
+
+        segments = Connect4.segments(board)
+        filtered_segments = segments[segments.any(1)]
+
+        for s in filtered_segments:
+            c = np.bincount(s, minlength=3)
+
+            c1 = c[PLAYER1]
+            c2 = c[PLAYER2]
+
+            if c2 == 0:
+                scores[PLAYER1][c1] += 1
+            elif c1 == 0:
+                scores[PLAYER2][c2] += 1
+
+        s1 = (weights * scores[PLAYER1]).sum()
+        s2 = (weights * scores[PLAYER2]).sum()
+
+        score = s1 - s2
+        if player_id == PLAYER1:
+            return score
+        else:
+            return -score
 
     @classmethod
     def hashkey(cls, board):

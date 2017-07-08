@@ -223,7 +223,7 @@ except NameError:
 # ______________________________________________________________________________
 # Simple Data Structures: infinity, Dict, Struct
 
-infinity = 1.0e400
+INF = 1.0e400
 
 # GAME CONSTANTS
 PLAYER1 = 1

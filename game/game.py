@@ -24,7 +24,11 @@ class GameEngine(object):
         self.game_problem = Connect4()
         self._whose_turn = PLAYER1
         # board represented as a matrix
-        self.board = np.zeros(self.game_problem.get_board_dim, dtype=int) 
+        self._board = np.zeros(self.game_problem.get_board_dim, dtype=int)
+        self.scores = { 
+            PLAYER1: 0,
+            PLAYER2: 0
+        }
         
     def notify(self, event):
         """
@@ -43,6 +47,10 @@ class GameEngine(object):
                 # push a new state on the stack
                 self.state.push(event.state)
 
+    @property
+    def get_board(self):
+        return self._board
+    
     @property
     def whose_turn(self):
         """
@@ -63,28 +71,6 @@ class GameEngine(object):
         if board[col][row] != 0:
             return None
         return row
-    
-    @staticmethod
-    def end_result(board):
-        """
-        Check end result
-        :param board: a (terminal) state
-        :return: PLAYER1, in case he won. PLAYER2,
-                in case player2 won. DRAW, otherwise.
-        """
-        for seg in Connect4.segments(board):
-            c = np.bincount(seg)
-            if c[0]:
-                continue
-            if c[PLAYER1] == 4:
-                return PLAYER1
-            elif c[PLAYER2] == 4:
-                return PLAYER2
-
-        if board.all():
-            return DRAW
-        else:
-            return None
     
     @property
     def advance_turn(self):
@@ -110,18 +96,18 @@ class GameEngine(object):
             }
         
         while self.running:
-            is_terminal = self.game_problem.is_terminal(self.board)
+            is_terminal = self.game_problem.is_terminal(self._board)
             if not is_terminal:
                 player = players[self.whose_turn]
-                move = player.choose(self.board)
-                self.board = self.game_problem.make_action(player, move, self.board)
+                move = player.choose(self.game_problem, self._board)
+                self._board = self.game_problem.make_action(player.playing_as, move, self._board)
                 new_tick = TickEvent()
                 self.evManager.Post(new_tick)
+            elif is_terminal == DRAW:
+                # post draw event.
+                new_tick = DrawEvent()
+                self.evManager.Post(new_tick)
             else:
-                game_result = self.end_result(self.board)
-                if game_result == DRAW:    # post draw event.
-                    new_tick = DrawEvent()
-                    self.evManager.Post(new_tick)
-                else:   # send event saying who has won
-                    new_tick = WinEvent(self.whose_turn)
-                    self.evManager.Post(new_tick)
+                # send event saying who has won
+                new_tick = WinEvent(is_terminal)
+                self.evManager.Post(new_tick)

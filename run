@@ -14,6 +14,7 @@ from agents import (GreedyEngine, WeightedGreedyEngine, RandomEngine,
 
 from game.game import GameEngine
 from game.arena import arena
+from problem.utils import PLAYER1, PLAYER2
 
 
 engine_map = {
@@ -70,14 +71,17 @@ def run_game(args):
     engine_name = args.engine.split(':')[0]
     engine_args = args.engine.split(':')[1:]
     engine_class = engine_map[engine_name]
-    engine = engine_class(*engine_args)
-    # human engine declaration
-    human = HumanEngine('human')
 
     if not args.player2:
+        engine = engine_class(PLAYER2, *engine_args)
+        # human engine declaration
+        human = HumanEngine('human')
         p1 = human
         p2 = engine
     else:
+        engine = engine_class(PLAYER1,*engine_args)
+        # human engine declaration
+        human = HumanEngine('human')
         p1 = engine
         p2 = human
 

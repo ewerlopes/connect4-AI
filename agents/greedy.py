@@ -6,20 +6,21 @@ from game.evaluate import Evaluator, INF
 
 
 class GreedyEngine(Engine):
-    def __init__(self):
-        self._evaluator = Evaluator()
-        self.evaluate = self._evaluator.evaluate
+    def __init__(self, play_as):
+        Engine.__init__(self, play_as)
 
-    def choose(self, board):
-        moves = board.actions()
+    def choose(self, game_problem, board):
+        moves = game_problem.actions(board)
         m = moves[0]
         moves = moves[1:]
 
         bestmove = m
-        bestscore = -self.evaluate(board.actions(m))
+        bestscore = -game_problem.evaluate(self.playing_as,
+                                           game_problem.make_action(self.playing_as, m, board))
 
         for m in moves:
-            score = -self.evaluate(board.actions(m))
+            score = -game_problem.evaluate(self.playing_as,
+                                           game_problem.make_action(self.playing_as, m, board))
             if score > bestscore:
                 bestmove = m
                 bestscore = score
