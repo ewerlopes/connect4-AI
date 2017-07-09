@@ -79,17 +79,17 @@ def run_game(args):
         p1 = human
         p2 = engine
     else:
-        engine = engine_class(PLAYER1,*engine_args)
+        engine = engine_class(PLAYER1, *engine_args)
         # human engine declaration
-        human = HumanEngine('human')
+        human = HumanEngine(PLAYER2, 'human')
         p1 = engine
-        p2 = human
+        p2 = engine_class(PLAYER2, *engine_args)
 
     # Start game
     ev_manager = eventmanager.EventManager()
     game_model = GameEngine(ev_manager)
     keyboard = controller.Keyboard(ev_manager, game_model)
-    graphics = view.ConsoleView(ev_manager, game_model)
+    graphics = view.GameView(ev_manager, game_model)
     game_model.run(p1, p2)
 
 

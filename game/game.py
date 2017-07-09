@@ -1,8 +1,9 @@
 from control.eventmanager import *
 from model.model import *
 from problem.game_problem import Connect4
-import numpy as np
 from problem.utils import PLAYER2, PLAYER1, DRAW
+import logging
+import numpy as np
 
 
 class GameEngine(object):
@@ -16,20 +17,27 @@ class GameEngine(object):
 
         Attributes:
         running (bool): True while the engine is online. Changed via QuitEvent().
+        _whose_turn (int): Keeps whose turn it is. Using constant values PLAYER1, PLAYER2.
+        _board (int matrix): game board.
+        has_ended (bool): a flag to mark whether the current match has ended
         """
         self.evManager = evManager
         evManager.RegisterListener(self)
+
+        self._whose_turn = None
+        self._board = None
+        self.has_ended = None
+
         self.running = False
         self.state = StateMachine()
         self.game_problem = Connect4()
-        self._whose_turn = PLAYER1
-        # board represented as a matrix
-        self._board = np.zeros(self.game_problem.get_board_dim, dtype=int)
-        
+
         self.scores = { 
             PLAYER1: 0,
             PLAYER2: 0
         }
+
+        self.new_game()
         
     def notify(self, event):
         """
@@ -38,7 +46,9 @@ class GameEngine(object):
 
         if isinstance(event, QuitEvent):
             self.running = False
-        if isinstance(event, StateChangeEvent):
+        elif isinstance(event, Restart):
+            self.new_game()
+        elif isinstance(event, StateChangeEvent):
             # pop request
             if not event.state:
                 # false if no more states are left
@@ -47,6 +57,12 @@ class GameEngine(object):
             else:
                 # push a new state on the stack
                 self.state.push(event.state)
+
+    def new_game(self):
+        self._whose_turn = PLAYER1
+        # board represented as a matrix
+        self._board = np.zeros(self.game_problem.get_board_dim, dtype=int)
+        self.has_ended = False
 
     @property
     def get_board(self):
@@ -75,10 +91,9 @@ class GameEngine(object):
     
     def advance_turn(self):
         """
-        Returns who plays next.
-        :return: A constant defining who plays next.
+        Advances turn
         """
-        return PLAYER1 if self._whose_turn != PLAYER1 else PLAYER2
+        self._whose_turn = PLAYER1 if self._whose_turn != PLAYER1 else PLAYER2
 
     def run(self, p1_engine, p2_engine):
         """
@@ -96,19 +111,25 @@ class GameEngine(object):
             }
         
         while self.running:
-            is_terminal = self.game_problem.is_terminal(self._board)
-            if not is_terminal:
+            if not self.has_ended:
                 player = players[self.whose_turn]
                 move = player.choose(self.game_problem, self._board)
                 self._board = self.game_problem.make_action(self.whose_turn, move, self._board)
-                self.advance_turn()
-                new_tick = TickEvent()
-                self.evManager.Post(new_tick)
-            elif is_terminal == DRAW:
-                # post draw event.
-                new_tick = DrawEvent()
-                self.evManager.Post(new_tick)
-            else:
-                # send event saying who has won
-                new_tick = WinEvent(is_terminal)
-                self.evManager.Post(new_tick)
+                is_terminal = self.game_problem.is_terminal(self._board)
+
+                if is_terminal == DRAW:
+                    # post draw event.
+                    new_tick = DrawEvent()
+                    self.evManager.Post(new_tick)
+                    self.has_ended = True
+                elif (is_terminal == PLAYER1) or (is_terminal == PLAYER2):
+                    # send event saying who has won
+                    new_tick = WinEvent(is_terminal)
+                    self.evManager.Post(new_tick)
+                    self.scores[self.whose_turn] += 1
+                    self.has_ended = True
+                else:
+                    self.advance_turn()
+
+            new_tick = TickEvent()
+            self.evManager.Post(new_tick)

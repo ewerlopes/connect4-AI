@@ -31,6 +31,8 @@ class Keyboard(object):
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         self.evManager.Post(StateChangeEvent(None))
+                    elif event.key == pygame.K_RETURN:
+                        self.evManager.Post(Restart())
                     else:
                         currentstate = self.model.state.peek()
                         if currentstate == model.STATE_MENU:
@@ -69,7 +71,7 @@ class Keyboard(object):
         if event.key == pygame.K_ESCAPE:
             self.evManager.Post(StateChangeEvent(None))
         # F1 shows the help
-        if event.key == pygame.K_F1:    
+        if event.key == pygame.K_F1:
             self.evManager.Post(StateChangeEvent(model.STATE_HELP))
         else:
             self.evManager.Post(InputEvent(event.unicode, None))

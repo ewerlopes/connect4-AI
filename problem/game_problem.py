@@ -22,7 +22,7 @@ class Game:
         raise NotImplementedError
 
     @abstractmethod
-    def make_action(self, action, state):
+    def make_action(self, player, action, board):
         """Return the state that results from making a move from a state."""
         raise NotImplementedError
 
@@ -146,6 +146,9 @@ class Connect4(Game):
         """
         if not (0 <= action < self._cols):
             raise ValueError(action)
+
+        if action is None:
+            return
         
         pos = board.copy()
 

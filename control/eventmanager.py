@@ -9,7 +9,18 @@ class Event(object):
     
     def __str__(self):
         return self.name
-    
+
+
+class Restart(Event):
+    """
+    Restart game event
+    """
+
+    def __init__(self):
+        self.name = "Restart event"
+
+    def __str__(self):
+        return self.name
     
 class DrawEvent(Event):
     """

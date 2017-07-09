@@ -36,6 +36,11 @@ PLAYER_CHIPS = {
     PLAYER1: RedChip,
     PLAYER2: YellowChip
 }
+
+PLAYER_NAMES = {
+    PLAYER1: 'Red',
+    PLAYER2: 'Yellow'
+}
         
 class GraphicalView(object):
     """
@@ -296,16 +301,6 @@ class GameView:
         logging.info('Initializing game')
 
         result = pygame.init()
-        # the array of chips already placed on the game
-        self.chips = pygame.sprite.Group()
-
-        logging.info('Loading images')
-
-        self.board_cell_image = utils.load_image('board_cell.png')
-        self.board_cell_highlighted_image = utils.load_image('board_cell_highlighted.png')
-
-        logging.info('Loading sounds')
-
         #############################
         # setting screen properties #
         #############################
@@ -316,6 +311,17 @@ class GameView:
 
         self.load_config()
         #############################
+
+
+        # the array of chips already placed on the game
+        self.chips = pygame.sprite.Group()
+
+        logging.info('Loading images')
+
+        self.board_cell_image = utils.load_image('board_cell.png')
+        self.board_cell_highlighted_image = utils.load_image('board_cell_highlighted.png')
+
+        logging.info('Loading sounds')
 
         self.sounds_volume = self.config.getfloat('connectfour', 'sounds_volume')
         self.musics_volume = self.config.getfloat('connectfour', 'music_volume')
@@ -331,7 +337,8 @@ class GameView:
 
         self.title_font = utils.load_font('Gidole-Regular.ttf', 22)
         self.normal_font = utils.load_font('Gidole-Regular.ttf', 16)
-        
+
+        self.highlighted_chips = {}
         self.isinitialized = True
         
     def new_game(self):
@@ -346,17 +353,20 @@ class GameView:
 
     def draw_board(self):
         """Draw the board itself (the game support)."""
-        board = self.model.get_board
-        for row in board:
-            for col in row:
+        self.chips.empty()
+        board = [list(l) for l in reversed(self.model.get_board.transpose())]
+        for row in range(len(board)):
+            print board[row]
+            for col in range(len(board[0])):
                 if board[row][col] != 0:
-                    chip = PLAYER_CHIPS[self.model.whose_tun]()
-                    chip.rect.left = 0
-                    chip.rect.top = settings.COLUMN_CHOOSING_MARGIN_TOP
+                    chip = PLAYER_CHIPS[board[row][col]]()
+                    chip.rect.left  = 0
+                    chip.rect.top   = settings.COLUMN_CHOOSING_MARGIN_TOP
                     chip.rect.right = settings.IMAGES_SIDE_SIZE * (col + 1)
                     chip.rect.top  += settings.IMAGES_SIDE_SIZE * (row + 1)
                     self.chips.add(chip)
-        
+
+        print self.highlighted_chips
         for x in range(0, settings.COLS):
             for y in range(0, settings.ROWS):
                 if (y, x) in self.highlighted_chips.keys() and self.highlighted_chips[(y, x)]:
@@ -398,7 +408,7 @@ class GameView:
         pygame.draw.line(self.window, settings.COLORS.BLACK.value, (game_name_rect.left - 15, 0),
                          (game_name_rect.left - 15, settings.COLUMN_CHOOSING_MARGIN_TOP - 1))
 
-        scores_yellow = self.title_font.render(str(self.model.scores[PLAYER2].score), True,
+        scores_yellow = self.title_font.render(str(self.model.scores[PLAYER2]), True,
                                                settings.COLORS.YELLOW.value)
         scores_yellow_rect = scores_yellow.get_rect()
         scores_yellow_rect.centery = 25
@@ -413,7 +423,7 @@ class GameView:
 
         self.window.blit(dash, dash_rect)
 
-        scores_red = self.title_font.render(str(self.model.scores[PLAYER1].score), True,
+        scores_red = self.title_font.render(str(self.model.scores[PLAYER1]), True,
                                             settings.COLORS.RED.value)
         scores_red_rect = scores_red.get_rect()
         scores_red_rect.centery = 25
@@ -431,10 +441,13 @@ class GameView:
 
         if isinstance(event, InitializeEvent):
             self.initialize()
+        elif isinstance(event, Restart):
+            self.new_game()
         elif isinstance(event, QuitEvent):
             # shut down the pygame graphics
             self.isinitialized = False
             pygame.quit()
+            sys.exit()
         elif isinstance(event, DrawEvent):
             if not self.isinitialized:
                 return
@@ -446,8 +459,6 @@ class GameView:
                 self.status_text = 'TIE!'
                 self.status_color = settings.COLORS.WHITE.value
                 self.render()
-            # limit the redraw speed to 30 frames per second
-            self.clock.tick(30)
         elif isinstance(event, WinEvent):
             if not self.isinitialized:
                 return
@@ -455,33 +466,28 @@ class GameView:
             if current_state == model.STATE_PLAY:
                 pygame.mixer.music.stop()
                 self.win_sound.play()
-                pygame.time.set_timer(settings.EVENTS.WINNER_CHIPS_EVENT.value, 600)
-                logging.info(self.current_player.name + ' WINS!')
                 self.highlighted_chips = Connect4.get_win_segment(self.model.get_board)
-                self.status_text = self.model.whose_turn + ' PLAYER WINS!'
+                pygame.time.set_timer(settings.EVENTS.WINNER_CHIPS_EVENT.value, 600)
+                self.status_text = PLAYER_NAMES[self.model.whose_turn] + ' PLAYER WINS!'
                 self.status_color = PLAYER_COLORS[self.model.whose_turn]
-            # limit the redraw speed to 30 frames per second
-            self.clock.tick(30)
+                self.render()
         elif isinstance(event, TickEvent):
             logging.info('Starting new player turn')
             if not self.isinitialized:
                 return
             current_state = self.model.state.peek()
             if current_state == model.STATE_PLAY:
-                self.renderplay()
-            self.status_text = self.model.whose_turn + " PLAYER'S TURN!"
-            self.status_color = PLAYER_COLORS[self.model.whose_turn]
-            
-            #if currents_tate == model.STATE_HELP:
-            #    self.renderhelp()
-            #if current_state == model.STATE_MENU:
-            #    self.rendermenu()
+                if not self.model.has_ended:
+                    self.status_text = PLAYER_NAMES[self.model.whose_turn] \
+                                       + " PLAYER'S TURN!"
+                    self.status_color = PLAYER_COLORS[self.model.whose_turn]
+                self.render()
 
-            # limit the redraw speed to 30 frames per second
-            self.clock.tick(30)
-            
     def render(self):
         self.draw_background()
         self.draw_header(self.status_text, self.status_color)
         self.chips.draw(self.window)
         self.draw_board()
+        pygame.display.update()
+        # limit the redraw speed
+        self.clock.tick(settings.FPS)
