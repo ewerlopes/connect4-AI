@@ -15,6 +15,7 @@ from agents import (GreedyEngine, WeightedGreedyEngine, RandomEngine,
 from game.game import GameEngine
 from game.arena import arena
 from problem.utils import PLAYER1, PLAYER2
+from view.settings import set_logging_config
 
 
 engine_map = {
@@ -67,6 +68,10 @@ def main():
 
 
 def run_game(args):
+
+    # setting logging
+    set_logging_config()
+
     # parsing ai engine information
     engine_name = args.engine.split(':')[0]
     engine_args = args.engine.split(':')[1:]

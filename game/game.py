@@ -118,6 +118,7 @@ class GameEngine(object):
                 if move is None:
                     new_tick = TickEvent()
                     self.evManager.Post(new_tick)
+                    logging.warn("Player skip move ...")
                     continue
 
                 self._board = self.game_problem.make_action(self.whose_turn, move, self._board)

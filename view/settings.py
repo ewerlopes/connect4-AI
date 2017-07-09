@@ -63,3 +63,42 @@ class LOBBY_STATES(Enum):
 class NETWORK_ENGINE_MODE(Enum):
     HOST = 2
     JOIN = 4
+
+
+def set_logging_config():
+
+    import logging
+
+    try:
+        import colorlog
+        have_colorlog = True
+    except ImportError:
+        have_colorlog = False
+
+    # create logger
+    logger = logging.getLogger('logger')
+    logger.setLevel(logging.DEBUG)
+
+    # create console handler and set level to debug
+    ch = logging.StreamHandler(sys.__stdout__)  # Add this
+    ch.setLevel(logging.DEBUG)
+
+    # create formatter
+    # formatter = logging.Formatter('%(asctime)s [%(levelname)s] -- %(message)s')
+
+    format = '%(asctime)s - %(levelname)-8s - %(message)s'
+    date_format = '%Y-%m-%d %H:%M:%S'
+    if have_colorlog and os.isatty(2):
+        cformat = '%(log_color)s' + format
+        formatter = colorlog.ColoredFormatter(cformat, date_format,
+                                              log_colors={'DEBUG': 'reset', 'INFO': 'reset',
+                                                          'WARNING': 'bold_yellow', 'ERROR': 'bold_red',
+                                                          'CRITICAL': 'bold_red'})
+    else:
+        formatter = logging.Formatter(format, date_format)
+
+    # add formatter to ch
+    ch.setFormatter(formatter)
+
+    # add ch to logger
+    logger.addHandler(ch)
