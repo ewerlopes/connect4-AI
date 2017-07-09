@@ -1,5 +1,5 @@
 import math
-import random
+import rand
 from collections import defaultdict
 
 from problem.utils import DRAW
@@ -107,7 +107,7 @@ class MonteCarloTreeSearch(Engine):
             n, w = stats[board.actions(m).hashkey()[0]]
             total_n += n
             print('Move %d score: %d/%d (%0.1f%%)' % (m+1, w, n, w/n*100))
-            if n > bestscore or (n == bestscore and random.random() <= 0.5):
+            if n > bestscore or (n == bestscore and rand.rand() <= 0.5):
                 bestmove = m
                 bestscore = n
         assert bestmove is not None

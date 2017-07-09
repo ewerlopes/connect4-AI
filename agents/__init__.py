@@ -1,6 +1,6 @@
 from agents.base import Engine
 from agents.greedy import GreedyEngine, WeightedGreedyEngine
-from agents.random import RandomEngine
+from agents.rand import RandomEngine
 from agents.mcts import MonteCarloTreeSearch
 from agents.negamax import NegamaxEngine
 from agents.alphabeta import AlphaBetaEngine, ABCachedEngine, ABDeepEngine

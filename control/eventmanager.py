@@ -31,6 +31,19 @@ class DrawEvent(Event):
         self.name = "Draw event"
 
 
+class HumanMoveEvent(Event):
+    """
+    Capture the human move event
+    """
+
+    def __init__(self, chip):
+        """
+        :param chip: the player chip
+        """
+        self.chip = chip
+        self.name = "Human move event"
+
+
 class WinEvent(Event):
     """
     Win event

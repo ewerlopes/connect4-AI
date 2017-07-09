@@ -72,24 +72,20 @@ def run_game(args):
     engine_args = args.engine.split(':')[1:]
     engine_class = engine_map[engine_name]
 
-    if not args.player2:
-        engine = engine_class(PLAYER2, *engine_args)
-        # human engine declaration
-        human = HumanEngine('human')
-        p1 = human
-        p2 = engine
-    else:
-        engine = engine_class(PLAYER1, *engine_args)
-        # human engine declaration
-        human = HumanEngine(PLAYER2, 'human')
-        p1 = engine
-        p2 = engine_class(PLAYER2, *engine_args)
-
-    # Start game
+    # define game manager modules (mvc design)
     ev_manager = eventmanager.EventManager()
     game_model = GameEngine(ev_manager)
     keyboard = controller.Keyboard(ev_manager, game_model)
     graphics = view.GameView(ev_manager, game_model)
+
+    if not args.player2:
+        p1 = HumanEngine(PLAYER1, view, 'human')
+        p2 = engine_class(PLAYER2, *engine_args)
+    else:
+        p1 = engine_class(PLAYER1, *engine_args)
+        p2 = HumanEngine(PLAYER2, graphics, 'human')
+
+    # Start game
     game_model.run(p1, p2)
 
 

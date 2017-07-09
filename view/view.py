@@ -338,8 +338,9 @@ class GameView:
         self.title_font = utils.load_font('Gidole-Regular.ttf', 22)
         self.normal_font = utils.load_font('Gidole-Regular.ttf', 16)
 
-        self.highlighted_chips = {}
         self.isinitialized = True
+        self.new_game()
+
         
     def new_game(self):
         logging.info('Starting new game')
@@ -350,6 +351,10 @@ class GameView:
         utils.load_random_music(
             ['techno_dreaming.wav', 'techno_celebration.wav', 'electric_rain.wav', 'snake_trance.wav'],
             volume=self.musics_volume)
+
+    def draw_human_chip(self, chip):
+        self.chips.add(chip)
+        self.chips.draw(self.window)
 
     def draw_board(self):
         """Draw the board itself (the game support)."""

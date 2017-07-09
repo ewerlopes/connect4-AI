@@ -114,6 +114,12 @@ class GameEngine(object):
             if not self.has_ended:
                 player = players[self.whose_turn]
                 move = player.choose(self.game_problem, self._board)
+
+                if move is None:
+                    new_tick = TickEvent()
+                    self.evManager.Post(new_tick)
+                    continue
+
                 self._board = self.game_problem.make_action(self.whose_turn, move, self._board)
                 is_terminal = self.game_problem.is_terminal(self._board)
 
