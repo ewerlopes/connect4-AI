@@ -2,6 +2,7 @@ from agents.base import Engine
 from view import settings
 from view.view import PLAYER_CHIPS
 import pygame
+import sys
 
 
 class HumanEngine(Engine):
@@ -23,13 +24,13 @@ class HumanEngine(Engine):
             player_chip.rect.right = settings.IMAGES_SIDE_SIZE * (col_clicked + 1)
             self.view.draw_human_chip(player_chip)
 
-        for event in pygame.event.get(pygame.MOUSEBUTTONDOWN):
-            # pygame.mouse.get_pressed() returns a tupple
-            # (leftclick, middleclick, rightclick) Each one
-            # is a boolean integer representing button up/down.
+        event = pygame.event.wait()
+        # pygame.mouse.get_pressed() returns a tupple
+        # (leftclick, middleclick, rightclick) Each one
+        # is a boolean integer representing button up/down.
+        if event.type == pygame.MOUSEBUTTONDOWN:
             if pygame.mouse.get_pressed()[0]:
                 return col_clicked
-
         return None
 
     def __str__(self):

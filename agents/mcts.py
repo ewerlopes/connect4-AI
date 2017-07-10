@@ -1,8 +1,8 @@
 import math
-import rand
+import random
 from collections import defaultdict
-
-from problem.utils import DRAW
+from problem.game_problem import Connect4
+from problem.utils import PLAYER1, PLAYER2, DRAW
 from agents.base import Engine
 from agents.greedy import WeightedGreedyEngine
 
@@ -32,9 +32,9 @@ class MonteCarloTreeSearch(Engine):
             depth = 0
             while game_problem.is_terminal(node) is None:
                 depth += 1
-                move, select = self.select_next_move(stats, node, C)
-                node = node.actions(move)
-                states.append(node.hashkey()[0])
+                move, select = self.select_next_move(stats, game_problem, node, C)
+                node = game_problem.make_action(self.playing_as, move, node)
+                states.append(Connect4.hashkey(node)[0])
 
                 if not select:
                     break
@@ -42,10 +42,10 @@ class MonteCarloTreeSearch(Engine):
             max_depth = max(depth, max_depth)
 
             # run.py simulation if not at the end of the game tree
-            if node.end is None:
-                result = self.simulate(node)
+            if game_problem.is_terminal(node) is None:
+                result = self.simulate(game_problem, node)
             else:
-                if node.end == 0:
+                if game_problem.is_terminal(node) == 0:
                     result = 0.5
                 else:
                     result = 0
@@ -58,28 +58,30 @@ class MonteCarloTreeSearch(Engine):
 
         return stats, max_depth
 
-    def simulate(self, board):
+    def get_next_to_move(self, whose_turn):
+        return PLAYER1 if whose_turn != PLAYER1 else PLAYER2
+
+    def simulate(self, game_problem, board):
         engine = self.simulation_engine
         node = board
-        while node.end is None:
-            m = engine.choose(node)
-            node = node.move(m)
-
-        if node.end == DRAW:
+        while game_problem.is_terminal(node) is None:
+            m = engine.choose(game_problem, node)
+            node = game_problem.make_action(self.playing_as, m, node)
+        if game_problem.is_terminal(node) == DRAW:
             return 0.5
-        elif node.end == board.get_next_to_move:
+        elif game_problem.is_terminal(node) == self.get_next_to_move(self.playing_as):
             return 1
         else:
             return 0
 
-    def select_next_move(self, stats, board, C):
+    def select_next_move(self, stats, game_problem, board, C):
         """Select the next state and consider if it should be expanded"""
 
         bestscore = None
         bestmove = None
 
-        children = [(m, stats[board.actions(m).hashkey()[0]])
-                    for m in board.moves()]
+        children = [(m, stats[game_problem.hashkey(game_problem.make_action(self.playing_as, m, board))[0]])
+                    for m in game_problem.actions(board)]
         total_n = sum(x[0] for (_, x) in children)
 
         for child_move, child_stat in children:
@@ -95,19 +97,19 @@ class MonteCarloTreeSearch(Engine):
         assert bestmove is not None
         return bestmove, True
 
-    def select_best_move(self, stats, depth, board):
+    def select_best_move(self, stats, depth, game_problem, board):
         """Select the best move at the end of the Monte Carlo tree search"""
 
         bestscore = 0
         bestmove = None
         total_n = 0
-        moves = board.moves()
+        moves = game_problem.actions(board)
 
         for m in moves:
-            n, w = stats[board.actions(m).hashkey()[0]]
+            n, w = stats[Connect4.hashkey(game_problem.make_action(self.playing_as, m, board))[0]]
             total_n += n
             print('Move %d score: %d/%d (%0.1f%%)' % (m+1, w, n, w/n*100))
-            if n > bestscore or (n == bestscore and rand.rand() <= 0.5):
+            if n > bestscore or (n == bestscore and random.random() <= 0.5):
                 bestmove = m
                 bestscore = n
         assert bestmove is not None

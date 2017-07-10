@@ -36,20 +36,21 @@ class WeightedGreedyEngine(Engine):
     """Same as GreedyEngine but move randomly using scores as weights
 
     """
-    def __init__(self, verbose=True):
+    def __init__(self, play_as, verbose=True):
+        Engine.__init__(self, play_as)
         self._evaluator = Evaluator()
         self._verbose = verbose
         self.evaluate = self._evaluator.evaluate
 
-    def choose(self, board):
-        moves = board.moves()
+    def choose(self, game_problem, board):
+        moves = game_problem.actions(board)
 
         # forced move?
         if len(moves) < 2:
             return moves[0]
 
         # winning move or threat blocking?
-        scores = [evaldiff(board, m) for m in moves]
+        scores = [evaldiff(board, m, self.playing_as) for m in moves]
         if max(scores) >= INF - 1:
             return max(zip(scores, moves))[1]
 
