@@ -341,7 +341,6 @@ class GameView:
         self.isinitialized = True
         self.new_game()
 
-        
     def new_game(self):
         logging.info('Starting new game')
         self.chips.empty()
@@ -360,8 +359,9 @@ class GameView:
         """Draw the board itself (the game support)."""
         self.chips.empty()
         board = [list(l) for l in reversed(self.model.get_board.transpose())]
+        logging.info("** Board:")
         for row in range(len(board)):
-            print board[row]
+            logging.info(board[row])
             for col in range(len(board[0])):
                 if board[row][col] != 0:
                     chip = PLAYER_CHIPS[board[row][col]]()
@@ -371,7 +371,6 @@ class GameView:
                     chip.rect.top  += settings.IMAGES_SIDE_SIZE * (row + 1)
                     self.chips.add(chip)
 
-        print self.highlighted_chips
         for x in range(0, settings.COLS):
             for y in range(0, settings.ROWS):
                 if (y, x) in self.highlighted_chips.keys() and self.highlighted_chips[(y, x)]:

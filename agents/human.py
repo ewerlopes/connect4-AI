@@ -23,15 +23,14 @@ class HumanEngine(Engine):
             player_chip.rect.right = settings.IMAGES_SIDE_SIZE * (col_clicked + 1)
             self.view.draw_human_chip(player_chip)
 
-        for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                # pygame.mouse.get_pressed() returns a tupple
-                # (leftclick, middleclick, rightclick) Each one
-                # is a boolean integer representing button up/down.
-                if pygame.mouse.get_pressed()[0]:
-                    return col_clicked
-            else:
-                return None
+        for event in pygame.event.get(pygame.MOUSEBUTTONDOWN):
+            # pygame.mouse.get_pressed() returns a tupple
+            # (leftclick, middleclick, rightclick) Each one
+            # is a boolean integer representing button up/down.
+            if pygame.mouse.get_pressed()[0]:
+                return col_clicked
+
+        return None
 
     def __str__(self):
         return self.name

@@ -1,6 +1,7 @@
 import pygame
 import model
 from eventmanager import *
+import logging
 
 class Keyboard(object):
     """

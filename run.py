@@ -5,6 +5,7 @@ import argparse
 from view import view
 import yaml
 import numpy as np
+import os
 
 from control import controller, eventmanager
 from agents import (GreedyEngine, WeightedGreedyEngine, RandomEngine,
@@ -34,6 +35,8 @@ engine_map = {
 
 
 def main():
+    os.environ['SDL_VIDEO_CENTERED'] = '1'  # This makes the window centered on the screen
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--static-seed', default=None, type=int,
                         help='Force a static seed for reproducible experiments')
@@ -70,7 +73,7 @@ def main():
 def run_game(args):
 
     # setting logging
-    set_logging_config()
+    set_logging_config(dev=False)
 
     # parsing ai engine information
     engine_name = args.engine.split(':')[0]

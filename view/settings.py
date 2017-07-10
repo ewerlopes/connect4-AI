@@ -65,7 +65,7 @@ class NETWORK_ENGINE_MODE(Enum):
     JOIN = 4
 
 
-def set_logging_config():
+def set_logging_config(dev=False):
 
     import logging
 
@@ -102,3 +102,11 @@ def set_logging_config():
 
     # add ch to logger
     logger.addHandler(ch)
+
+    logging.basicConfig(
+        format=format,
+        datefmt=date_format,
+        stream=sys.stdout,
+    )
+
+    logging.getLogger().setLevel(logging.DEBUG if dev else logging.WARNING)
