@@ -8,18 +8,18 @@ from agents.greedy import WeightedGreedyEngine
 
 
 class MonteCarloTreeSearch(Engine):
-    def __init__(self, simulations=1000, C=1/math.sqrt(2)):
-        super(MonteCarloTreeSearch, self).__init__()
+    def __init__(self, playing_as, simulations=1000, C=1/math.sqrt(2)):
+        super(MonteCarloTreeSearch, self).__init__(playing_as)
         self.simulations = int(simulations)
         self.C = float(C)
         self.simulation_engine = WeightedGreedyEngine(False)
         self._stats = defaultdict(lambda: [0, 0])
 
-    def choose(self, board):
-        stats, depth = self.search(board, self.simulations, self.C)
-        return self.select_best_move(stats, depth, board)
+    def choose(self, game_problem, board):
+        stats, depth = self.search(game_problem, board, self.simulations, self.C)
+        return self.select_best_move(stats, depth, game_problem, board)
 
-    def search(self, board, simulations, C):
+    def search(self, game_problem, board, simulations, C):
         stats = self._stats
         root = board
         max_depth = 0
@@ -30,7 +30,7 @@ class MonteCarloTreeSearch(Engine):
 
             # select leaf node
             depth = 0
-            while node.end is None:
+            while game_problem.is_terminal(node) is None:
                 depth += 1
                 move, select = self.select_next_move(stats, node, C)
                 node = node.actions(move)

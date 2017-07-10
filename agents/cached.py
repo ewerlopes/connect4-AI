@@ -7,7 +7,7 @@ class CachedEngineMixin(object):
         super(CachedEngineMixin, self).__init__(*args, **kwargs)
         self._cache = Cache()
 
-    def search(self, board, depth, ply=1, alpha=-INF, beta=INF):
+    def search(self, game_problem, board, depth, ply=1, alpha=-INF, beta=INF):
         hit, move, score = self._cache.lookup(board, depth, ply, alpha, beta)
         if hit:
             self.inc('hits')
@@ -17,7 +17,8 @@ class CachedEngineMixin(object):
                 move = []
             return move, score
         else:
-            move, score = super(CachedEngineMixin, self).search(board, depth, ply,
+            move, score = super(CachedEngineMixin, self).search(game_problem,
+                                                                board, depth, ply,
                                                                 alpha, beta,
                                                                 hint=move)
             self._cache.put(board, move, depth, ply, score, alpha, beta)

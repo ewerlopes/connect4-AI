@@ -122,6 +122,9 @@ class Connect4(Game):
 
     @classmethod
     def segments(cls, board):
+        for b in board:
+            print b
+        print
         board = board.flatten()
         return board[utils.all_segments]
 

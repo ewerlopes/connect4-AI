@@ -1,5 +1,5 @@
 class IterativeDeepeningEngineMixin(object):
-    def choose(self, board):
+    def choose(self, game_problem, board):
         for depth in range(1, self._maxdepth+1):
             self.initcnt()
             self._counters['depth'] = depth

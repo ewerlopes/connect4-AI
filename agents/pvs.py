@@ -5,29 +5,35 @@ from agents.deepening import IterativeDeepeningEngineMixin
 
 
 class PVSEngine(AlphaBetaEngine):
-    def search(self, board, depth, ply=1, alpha=-INF, beta=INF, hint=None):
+    def search(self, game_problem, board, depth, ply=1, alpha=-INF, beta=INF, hint=None):
         self.inc('nodes')
 
-        if board.end is not None:
-            return self.endscore(board, ply)
+        if game_problem.is_terminal(board) is not None:
+            return self.endscore(game_problem, board, ply)
 
         if depth <= 0:
             self.inc('leaves')
-            return [], self.evaluate(board)
+            return [], game_problem.evaluate(self.playing_as, board)
 
         bestmove = []
         bestscore = alpha
-        for i, m in enumerate(self.moveorder(board, board.moves(), hint)):
+        for i, m in enumerate(self.moveorder(board, game_problem.actions(board), hint)):
             if i == 0 or depth == 1 or (beta-alpha) == 1:
-                nextmoves, score = self.search(board.actions(m), depth - 1, ply + 1,
+                nextmoves, score = self.search(game_problem,
+                                               game_problem.make_action(self.playing_as, m, board),
+                                               depth - 1, ply + 1,
                                                -beta, -bestscore)
             else:
                 # pvs uses a zero window for all the other searches
-                _, score = self.search(board.actions(m), depth - 1, ply + 1,
+                _, score = self.search(game_problem,
+                                       game_problem.make_action(self.playing_as, m, board),
+                                       depth - 1, ply + 1,
                                        -bestscore - 1, -bestscore)
                 score = -score
                 if score > bestscore:
-                    nextmoves, score = self.search(board.actions(m), depth - 1, ply + 1,
+                    nextmoves, score = self.search(game_problem,
+                                                   game_problem.make_action(self.playing_as, m, board),
+                                                   depth - 1, ply + 1,
                                                    -beta, -bestscore)
                 else:
                     continue

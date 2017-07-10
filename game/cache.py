@@ -1,5 +1,5 @@
 from collections import namedtuple, OrderedDict
-
+from problem.game_problem import Connect4
 from evaluate import INF
 
 
@@ -16,7 +16,7 @@ class Cache(object):
         self._cache = OrderedDict()
 
     def put(self, board, moves, depth, ply, score, alpha=-INF, beta=INF):
-        key, flip = board.hashkey()
+        key, flip = Connect4.hashkey(board)
         if moves:
             move = moves[0]
         else:
@@ -43,7 +43,7 @@ class Cache(object):
             self._cache.popitem(last=False)
 
     def lookup(self, board, depth, ply, alpha=-INF, beta=INF):
-        key, flip = board.hashkey()
+        key, flip = Connect4.hashkey(board)
         if key not in self._cache:
             return False, None, None
 
@@ -60,10 +60,10 @@ class Cache(object):
             elif entry.state is Cache.UPPERBOUND and entry.score <= alpha:
                 hit = True
 
-        if flip and entry.actions is not None:
-            move = 6 - entry.actions
+        if flip and entry.move is not None:
+            move = 6 - entry.move
         else:
-            move = entry.actions
+            move = entry.move
 
         if hit:
             score = entry.score

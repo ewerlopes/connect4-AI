@@ -1,6 +1,5 @@
 import random
 from functools import partial
-
 from evaluate import Evaluator
 from evaldiff import evaldiff
 
